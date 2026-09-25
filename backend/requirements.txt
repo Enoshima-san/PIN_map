@@ -1,0 +1,10 @@
+Django>=4.2,<5.1
+djangorestframework>=3.14
+djangorestframework-gis>=1.0
+django-cors-headers>=4.3
+psycopg2-binary>=2.9
+django-filter>=23.5
+Pillow>=10.0
+gunicorn>=21.0
+django-extensions>=3.2
+# pgRouting is PostgreSQL extension: CREATE EXTENSION postgis; CREATE EXTENSION pgrouting;
