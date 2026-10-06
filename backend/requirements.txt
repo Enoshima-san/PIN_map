@@ -8,3 +8,4 @@ Pillow>=10.0
 gunicorn>=21.0
 django-extensions>=3.2
 # pgRouting is PostgreSQL extension: CREATE EXTENSION postgis; CREATE EXTENSION pgrouting;
+djangorestframework-simplejwt==5.5.1

@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     'django.contrib.gis',  # GeoDjango
     'rest_framework',
     'rest_framework_gis',
+    'rest_framework_simplejwt',  # JWT-токены для API
     'corsheaders',
     'django_filters',
     'mapapp',
@@ -96,8 +97,7 @@ CORS_ALLOWED_ORIGINS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # JWT-аутентификация
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',  # tighten in production
