@@ -1,4 +1,5 @@
 from django.contrib.gis.db import models
+from django_cryptography.fields import encrypt
 from django.contrib.auth.models import User
 from django.contrib.gis.geos import Point, LineString
 
@@ -50,11 +51,11 @@ class MapItem(models.Model):
 
     item_type = models.CharField(max_length=10, choices=ITEM_TYPES)
     title = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
+    description = encrypt(models.TextField(blank=True))
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='map_items')
     verifications = models.PositiveIntegerField(default=0)
-    address = models.CharField(max_length=500, blank=True)
+    address = encrypt(models.CharField(max_length=500, blank=True))
 
     # Геометрия: Point для объекта, LineString для маршрута
     location = models.PointField(srid=4326, null=True, blank=True)  # для объектов и старта маршрута
