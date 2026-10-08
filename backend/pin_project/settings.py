@@ -5,6 +5,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-insecure-change-me-in-production-pin-map-2024')
 
+# Ключ Fernet для шифрования полей в БД.
+# Сгенерирован командой:
+# python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+CRYPTOGRAPHY_KEY = 'vQa8b0EeljZ2tNuotLpCEmp7X38aQ6mpZxFfv3eCkCk='
+
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['*']
@@ -19,7 +24,6 @@ INSTALLED_APPS = [
     'django.contrib.gis',  # GeoDjango
     'rest_framework',
     'rest_framework_gis',
-    'rest_framework_simplejwt',  # JWT-токены для API
     'corsheaders',
     'django_filters',
     'mapapp',
@@ -60,9 +64,9 @@ WSGI_APPLICATION = 'pin_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
-        'NAME': os.environ.get('POSTGRES_DB', 'EXAMPLE'), # ИЗМЕНИТЬ НА ВАШЕ НАЗВАНИЕ БД
-        'USER': os.environ.get('POSTGRES_USER', 'EXAMPLE'), # ИЗМЕНИТЬ НА ИМЯ ВАШЕГО ПОЛЬЗОВАТЕЛЯ PSQL
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'EXAMPLE'), # ИЗМЕНИТЬ НА ВАШ ПАРОЛЬ СЕРВЕРА PSQL
+        'NAME': os.environ.get('POSTGRES_DB', 'EXAMPLE'),
+        'USER': os.environ.get('POSTGRES_USER', 'EXAMPLE'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'EXAMPLE'),
         'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
         'PORT': os.environ.get('POSTGRES_PORT', '5432'),
     }
@@ -97,7 +101,8 @@ CORS_ALLOWED_ORIGINS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',  # JWT-аутентификация
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.AllowAny',  # tighten in production
@@ -117,13 +122,23 @@ REST_FRAMEWORK = {
 
 # ДОБАВИТЬ ВАШ ПУТЬ ДО УСТАНОВЛЕННЫХ БИБЛИОТЕК КАРТОГРАФИИ GDAL, GEOS, PROJ
 
+# БЕЗОПАСНОСТЬ (HTTPS) — включается автоматически в проде
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 if os.name == 'nt':
-    OSGEO = Path(r'!EXAMPLE!\Here\PIN_map\backend\venv\Lib\site-packages\osgeo')
+    OSGEO = Path(r'Ваш_Путь\PIN_map-main\backend\venv\Lib\site-packages\osgeo')
     PROJ_DIR = OSGEO / 'data' / 'proj'
 
     os.environ['PATH'] = str(OSGEO) + os.pathsep + os.environ.get('PATH', '')
-    os.environ['PROJ_LIB'] = r'!EXAMPLE!\proj_data'
-    os.environ['PROJ_DATA'] = r'!EXAMPLE!\proj_data'
+    os.environ['PROJ_LIB'] = str(PROJ_DIR)
+    os.environ['PROJ_DATA'] = str(PROJ_DIR)
 
     gdal_data = OSGEO / 'data' / 'gdal'
     if gdal_data.exists():
