@@ -4,9 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PiN — Социальная карта прогулок</title>
+    <!-- Стили Leaflet загружаются из внешнего CDN. Версия зафиксирована; для production желательно также применять CSP/SRI или локальную сборку. -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   </head>
   <body>
+    <!-- В этот контейнер React монтирует всё приложение. -->
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
