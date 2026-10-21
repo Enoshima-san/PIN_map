@@ -1,30 +1,23 @@
-// Основной компонент фронтенда: интерфейс каталога, карты, авторизации и модерации.
-// TODO: useRef и L сейчас не используются. При рефакторинге их можно удалить, если они не понадобятся.
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { MapContainer, TileLayer, CircleMarker, Polyline, useMapEvents, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, CircleMarker, Polyline, ZoomControl, useMapEvents, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import * as api from './api'
 
-// Начальная точка и масштаб карты.
 const CENTER = [53.7585, 87.1350]
 const ZOOM = 14
 
-// Возвращает CSS-класс для визуального отображения уровня уединённости.
 function privacyClass(p) {
   if (p === 'тихий') return 'badge-privacy-quiet'
   if (p === 'высокий') return 'badge-privacy-high'
   return 'badge-privacy-med'
 }
 
-// Формирует бейдж статуса заявки: одобрено, на модерации или отклонено.
 function statusBadge(status) {
   if (status === 'approved') return <span className="badge" style={{ background: 'rgba(46,204,113,0.15)', color: '#2ecc71' }}>Одобрено</span>
   if (status === 'pending') return <span className="badge" style={{ background: 'rgba(243,156,18,0.15)', color: '#f39c12' }}>На модерации</span>
   return <span className="badge" style={{ background: 'rgba(231,76,60,0.15)', color: '#e74c3c' }}>Отклонено</span>
 }
 
-// Обрабатывает клик по карте во время создания объекта или маршрута.
-// Координаты, полученные в браузере, всё равно должны проверяться на сервере.
 function MapClickHandler({ createType, onObjectCoord, onRoutePoint }) {
   useMapEvents({
     click(e) {
@@ -36,7 +29,6 @@ function MapClickHandler({ createType, onObjectCoord, onRoutePoint }) {
   return null
 }
 
-// Перемещает карту к выбранному объекту без ручного управления экземпляром Leaflet.
 function FlyTo({ center, zoom }) {
   const map = useMap()
   useEffect(() => {
@@ -46,7 +38,7 @@ function FlyTo({ center, zoom }) {
 }
 
 export default function App() {
-  // Основные состояния интерфейса: вкладки, данные каталога, выбранный объект и пользователь.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [tab, setTab] = useState('catalog')
   const [catalogMode, setCatalogMode] = useState('objects')
   const [items, setItems] = useState([])
@@ -67,7 +59,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [highlightRouteId, setHighlightRouteId] = useState(null)
 
-  // Состояния форм создания объекта/маршрута, входа, регистрации и комментария.
+  // forms
   const [createForm, setCreateForm] = useState({
     title: '', desc: '', category: 'Культурное наследие', privacy: 'тихий',
     objActivity: 'Прогулка', routeActivity: 'Пеший маршрут', duration: 45,
@@ -76,7 +68,6 @@ export default function App() {
   const [regForm, setRegForm] = useState({ email: '', password: '', confirm: '' })
   const [commentText, setCommentText] = useState('')
 
-  // Следим за состоянием сети, чтобы показать пользователю наличие подключения.
   useEffect(() => {
     const on = () => setOnline(true)
     const off = () => setOnline(false)
@@ -85,14 +76,10 @@ export default function App() {
     return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
   }, [])
 
-  // При загрузке приложения пробуем восстановить текущую сессию пользователя.
-  // Ошибка здесь означает, что пользователь не авторизован; пароль или токены в консоль не выводятся.
   useEffect(() => {
     api.getMe().then(u => setUser(u)).catch(() => {})
   }, [])
 
-  // Загружает публичный каталог и передаёт выбранные фильтры на backend.
-  // SECURITY: фильтры на клиенте не являются защитой — сервер сам должен ограничивать доступ к неопубликованным данным.
   const loadCatalog = useCallback(async () => {
     try {
       const params = { status: 'approved', item_type: catalogMode === 'objects' ? 'object' : 'route' }
@@ -113,7 +100,6 @@ export default function App() {
 
   useEffect(() => { loadCatalog() }, [loadCatalog])
 
-  // Получаем заявки текущего пользователя. Параметр mine должен проверяться сервером по активной сессии.
   const loadMyItems = useCallback(async () => {
     if (!user) return
     try {
@@ -127,8 +113,6 @@ export default function App() {
 
   useEffect(() => { if (tab === 'my-items') loadMyItems() }, [tab, loadMyItems])
 
-  // Загружаем заявки для вкладки модератора.
-  // SECURITY: скрытие вкладки во фронтенде не защищает API; права модератора обязательно проверяются на backend.
   const loadModeration = useCallback(async () => {
     try {
       const data = await api.fetchItems({ status: modStatus })
@@ -138,7 +122,6 @@ export default function App() {
 
   useEffect(() => { if (tab === 'moderation') loadModeration() }, [tab, loadModeration])
 
-  // Загружает полную информацию о выбранном объекте/маршруте и переводит карту к нему.
   const openDetail = async (id) => {
     try {
       const item = await api.fetchItem(id)
@@ -153,8 +136,6 @@ export default function App() {
     setFlyTarget(null)
   }
 
-  // Отправляет подтверждение существования объекта от авторизованного пользователя.
-  // SECURITY: сервер должен запрещать повторные подтверждения от одного пользователя.
   const handleVerify = async () => {
     if (!user) { alert('Войдите в аккаунт'); setTab('account'); return }
     try {
@@ -167,8 +148,6 @@ export default function App() {
     }
   }
 
-  // Добавление комментария к выбранному объекту. trim() убирает пустые пробелы на клиенте.
-  // SECURITY: длину и содержимое комментария всё равно нужно валидировать на сервере.
   const handleAddComment = async (e) => {
     e.preventDefault()
     if (!commentText.trim() || !selected) return
@@ -180,8 +159,6 @@ export default function App() {
     } catch (e) { alert('Ошибка добавления комментария') }
   }
 
-  // Удаляем комментарий и сразу обновляем список на экране.
-  // SECURITY: backend должен проверять, что комментарий удаляет его автор или администратор.
   const handleDeleteComment = async (cid) => {
     try {
       await api.deleteComment(cid)
@@ -189,8 +166,6 @@ export default function App() {
     } catch (e) { alert('Не удалось удалить') }
   }
 
-  // Формируем данные новой точки или маршрута и отправляем их на сервер.
-  // Проверки ниже нужны для удобства пользователя, но не заменяют серверную валидацию.
   const handleCreate = async (e) => {
     e.preventDefault()
     if (!user) return
@@ -227,8 +202,6 @@ export default function App() {
     } finally { setLoading(false) }
   }
 
-  // Вход пользователя. Пароль хранится только в состоянии формы и отправляется через API.
-  // SECURITY: в рабочей версии приложение должно работать по HTTPS, а пароль нельзя логировать.
   const handleLogin = async (e) => {
     e.preventDefault()
     try {
@@ -238,8 +211,6 @@ export default function App() {
     } catch (err) { alert(err.response?.data?.detail || 'Ошибка входа') }
   }
 
-  // Регистрация пользователя. Совпадение паролей проверяется на клиенте для удобства.
-  // Требования к сложности пароля должны дополнительно проверяться на backend.
   const handleRegister = async (e) => {
     e.preventDefault()
     if (regForm.password !== regForm.confirm) { alert('Пароли не совпадают'); return }
@@ -250,16 +221,12 @@ export default function App() {
     } catch (err) { alert(err.response?.data?.detail || 'Ошибка регистрации') }
   }
 
-  // Завершаем серверную сессию и очищаем пользователя во фронтенде.
   const handleLogout = async () => {
     await api.logout()
     setUser(null)
     setTab('account')
   }
 
-  // Переключение роли оставлено как демонстрационная функция.
-  // SECURITY: это потенциально опасное место. Обычный пользователь не должен иметь возможность
-  // самостоятельно получить роль модератора. Такая операция должна быть доступна только администратору на backend.
   const handleToggleRole = async () => {
     if (!user) { alert('Сначала войдите'); setTab('account'); return }
     try {
@@ -268,24 +235,21 @@ export default function App() {
     } catch (e) { alert('Ошибка') }
   }
 
-  // Запоминаем выбранную на карте точку для нового объекта.
   const onObjectCoord = (coord) => {
     setObjectCoord(coord)
     setTab('create')
   }
-  // Каждым кликом добавляем следующую точку строящегося маршрута.
   const onRoutePoint = (pt) => {
     setRoutePoints(prev => [...prev, pt])
     setTab('create')
   }
 
-  // Отдельно выбираем маршруты, чтобы отрисовать их линиями поверх карты.
   const visibleItems = items
   const routes = visibleItems.filter(i => i.item_type === 'route' && i.track_coordinates)
 
   return (
-    <>
-      <div id="sidebar">
+    <div className={`app-layout${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
+      <div id="sidebar" aria-hidden={sidebarCollapsed} inert={sidebarCollapsed ? '' : undefined}>
         <div className="header-title">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -308,8 +272,7 @@ export default function App() {
           <button className={`tab-btn ${tab === 'account' ? 'active' : ''}`} onClick={() => setTab('account')}>Аккаунт</button>
         </div>
 
-        {/* Каталог опубликованных объектов и маршрутов. React экранирует текстовые значения по умолчанию,
-            поэтому здесь не используется небезопасный dangerouslySetInnerHTML. */}
+        {/* CATALOG */}
         <div className={`tab-content ${tab === 'catalog' ? 'active' : ''}`}>
           {!selected ? (
             <div>
@@ -397,7 +360,6 @@ export default function App() {
                 <div>
                   <label style={{ fontSize: 11, textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Фотоматериал</label>
                   <div className="media-gallery">
-                    {/* SECURITY: URL изображения приходит с сервера, поэтому его источник желательно валидировать на backend. */}
                     <img src={selected.image_display || selected.image_url || ''} alt="Фото" />
                   </div>
                 </div>
@@ -441,7 +403,7 @@ export default function App() {
           )}
         </div>
 
-        {/* Форма создания объекта или маршрута. Клиентские required/ограничения нельзя считать защитой API. */}
+        {/* CREATE */}
         <div className={`tab-content ${tab === 'create' ? 'active' : ''}`}>
           {!user ? (
             <div style={{ textAlign: 'center', padding: '30px 10px' }}>
@@ -531,7 +493,7 @@ export default function App() {
           )}
         </div>
 
-        {/* Заявки текущего пользователя. Доступ к чужим заявкам должен отсекаться сервером. */}
+        {/* MY ITEMS */}
         <div className={`tab-content ${tab === 'my-items' ? 'active' : ''}`}>
           <h3 style={{ marginBottom: 10, fontSize: 16 }}>Мои созданные объекты и маршруты</h3>
           <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 14 }}>Здесь вы можете отслеживать статус модерации каждой вашей заявки.</p>
@@ -578,8 +540,7 @@ export default function App() {
           ))}
         </div>
 
-        {/* Раздел модерации показывается только модератору в интерфейсе.
-            SECURITY: approve/reject должны дополнительно проверять роль на сервере. */}
+        {/* MODERATION */}
         <div className={`tab-content ${tab === 'moderation' ? 'active' : ''}`}>
           <h3 style={{ marginBottom: 10, fontSize: 16 }}>Заявки на модерацию</h3>
           <div className="input-group">
@@ -608,7 +569,7 @@ export default function App() {
           ))}
         </div>
 
-        {/* Вход, регистрация и информация об активной сессии пользователя. */}
+        {/* ACCOUNT */}
         <div className={`tab-content ${tab === 'account' ? 'active' : ''}`}>
           {!user ? (
             <>
@@ -665,9 +626,21 @@ export default function App() {
         </div>
       </div>
 
-      {/* Основная карта. Все координаты и маршруты приходят из состояния приложения. */}
+      <button
+        type="button"
+        className="sidebar-toggle"
+        onClick={() => setSidebarCollapsed(collapsed => !collapsed)}
+        aria-controls="sidebar"
+        aria-expanded={!sidebarCollapsed}
+        aria-label={sidebarCollapsed ? 'Показать панель управления' : 'Скрыть панель управления'}
+        title={sidebarCollapsed ? 'Показать панель управления' : 'Скрыть панель управления'}
+      >
+        <span aria-hidden="true">{sidebarCollapsed ? '→' : '←'}</span>
+      </button>
+
       <div id="map-container">
-        <MapContainer center={CENTER} zoom={ZOOM} style={{ width: '100%', height: '100%' }} attributionControl={false}>
+        <MapContainer center={CENTER} zoom={ZOOM} style={{ width: '100%', height: '100%' }} attributionControl={false} zoomControl={false}>
+          <ZoomControl position="topright" />
           <TileLayer
             url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
             maxZoom={16}
@@ -705,6 +678,6 @@ export default function App() {
           )}
         </MapContainer>
       </div>
-    </>
+    </div>
   )
 }
