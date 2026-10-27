@@ -8,7 +8,10 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-insecure-change-me-in-prod
 # Ключ Fernet для шифрования полей в БД.
 # Сгенерирован командой:
 # python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-CRYPTOGRAPHY_KEY = 'vQa8b0EeljZ2tNuotLpCEmp7X38aQ6mpZxFfv3eCkCk='
+#CRYPTOGRAPHY_KEY = 'vQa8b0EeljZ2tNuotLpCEmp7X38aQ6mpZxFfv3eCkCk='
+
+# Новый ключ для django-encrypted-model-fields
+FIELD_ENCRYPTION_KEY = 'vQa8b0EeljZ2tNuotLpCEmp7X38aQ6mpZxFfv3eCkCk='
 
 DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
@@ -24,6 +27,7 @@ INSTALLED_APPS = [
     'django.contrib.gis',  # GeoDjango
     'rest_framework',
     'rest_framework_gis',
+    'encrypted_model_fields',
     'corsheaders',
     'django_filters',
     'mapapp',
@@ -97,6 +101,12 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'http://127.0.0.1:5173',
     'http://localhost:3000',
+]
+
+# Разрешаем CSRF-запросы с фронтенда
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
 ]
 
 REST_FRAMEWORK = {

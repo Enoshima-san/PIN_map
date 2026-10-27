@@ -6,6 +6,22 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+// Функция для чтения cookie
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+// Добавляем CSRF-токен в каждый запрос
+api.interceptors.request.use((config) => {
+  const csrfToken = getCookie('csrftoken');
+  if (csrfToken) {
+    config.headers['X-CSRFToken'] = csrfToken;
+  }
+  return config;
+});
+
 export async function fetchItems(params = {}) {
   const { data } = await api.get('/items/', { params })
   return data.results || data
