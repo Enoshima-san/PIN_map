@@ -8,6 +8,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 from .models import MapItem, Comment, Profile, Verification, RoadEdge
 from .serializers import (
@@ -151,6 +153,7 @@ class AuthView(APIView):
         logout(request)
         return Response({'detail': 'ok'})
 
+    @method_decorator(ensure_csrf_cookie)
     def get(self, request):
         if request.user.is_authenticated:
             Profile.objects.get_or_create(user=request.user)
