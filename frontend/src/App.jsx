@@ -39,6 +39,7 @@ function FlyTo({ center, zoom }) {
 
 export default function App() {
   const [tab, setTab] = useState('catalog')
+  const [sidebarHidden, setSidebarHidden] = useState(false)
   const [catalogMode, setCatalogMode] = useState('objects')
   const [items, setItems] = useState([])
   const [myItems, setMyItems] = useState([])
@@ -248,7 +249,8 @@ export default function App() {
 
   return (
     <>
-      <div id="sidebar">
+      <div id="sidebar" className={sidebarHidden ? 'sidebar-hidden' : ''}
+        inert={sidebarHidden ? '' : undefined}>
         <div className="header-title">
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -624,6 +626,13 @@ export default function App() {
           )}
         </div>
       </div>
+
+      <button type="button" className="sidebar-toggle"
+        onClick={() => setSidebarHidden(hidden => !hidden)}
+        aria-controls="sidebar" aria-expanded={!sidebarHidden}
+        aria-label={sidebarHidden ? 'Показать панель управления' : 'Скрыть панель управления'}>
+        {sidebarHidden ? '›' : '‹'}
+      </button>
 
       <div id="map-container">
         <MapContainer center={CENTER} zoom={ZOOM} style={{ width: '100%', height: '100%' }} attributionControl={false}>
