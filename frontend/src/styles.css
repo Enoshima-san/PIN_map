@@ -1,4 +1,5 @@
 :root {
+  --sidebar-width: min(420px, calc(100vw - 40px));
   --bg-primary: #121215;
   --bg-surface: #1c1c22;
   --bg-card: #252530;
@@ -14,16 +15,30 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
 body { display: flex; height: 100vh; background-color: var(--bg-primary); color: var(--text-main); overflow: hidden; }
-#root { display: flex; width: 100%; height: 100%; }
+#root { display: flex; width: 100%; height: 100%; position: relative; }
 
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg-primary); }
 ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
 
 #sidebar {
-  width: 420px; background: var(--bg-surface); display: flex; flex-direction: column;
+  width: var(--sidebar-width); background: var(--bg-surface); display: flex; flex-direction: column;
   border-right: 1px solid var(--border-color); z-index: 1000; box-shadow: 5px 0 20px rgba(0,0,0,0.5);
+  position: absolute; top: 0; bottom: 0; left: 0;
+  transition: transform 0.25s ease;
 }
+#sidebar.sidebar-hidden { transform: translateX(-100%); box-shadow: none; }
+
+.sidebar-toggle {
+  position: absolute; top: 50%; left: var(--sidebar-width); z-index: 1001;
+  transform: translateY(-50%); transition: left 0.25s ease;
+  width: 32px; height: 64px; background: var(--bg-surface); color: var(--text-main);
+  border: 1px solid var(--border-color); border-radius: 0 8px 8px 0;
+  font-size: 28px; cursor: pointer;
+}
+#sidebar.sidebar-hidden + .sidebar-toggle { left: 0; }
+.sidebar-toggle:hover { background: var(--bg-card); }
+.sidebar-toggle:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
 .header-title {
   padding: 18px; border-bottom: 1px solid var(--border-color);
   display: flex; justify-content: space-between; align-items: center;
@@ -119,7 +134,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent-color); }
   color: var(--status-rejected); font-size: 11px; cursor: pointer; text-decoration: underline;
 }
 
-#map-container { flex: 1; position: relative; }
+#map-container { flex: 1; position: relative; z-index: 0; }
+#map-container .leaflet-top.leaflet-left { left: auto; right: 10px; }
 #map { width: 100%; height: 100%; background: #121215; }
 
 .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 14px; }
