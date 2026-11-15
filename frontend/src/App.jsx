@@ -634,7 +634,28 @@ export default function App() {
         {sidebarHidden ? '›' : '‹'}
       </button>
 
-      <div id="map-container">
+      <div id="map-container" style={{ position: 'relative' }}>
+
+        {!online && (
+          <div style={{
+            position: 'absolute',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#e74c3c',
+            color: '#fff',
+            padding: '12px 24px',
+            borderRadius: '8px',
+            zIndex: 1000,
+            fontWeight: 'bold',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+            textAlign: 'center',
+            pointerEvents: 'none' // чтобы баннер не мешал кликать по карте
+          }}>
+            Нет соединения с интернетом. Карта недоступна
+          </div>
+        )}
+
         <MapContainer center={CENTER} zoom={ZOOM} style={{ width: '100%', height: '100%' }} attributionControl={false}>
           <TileLayer
             url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
