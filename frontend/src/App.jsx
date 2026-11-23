@@ -5,6 +5,7 @@ import * as api from './api'
 
 const CENTER = [53.7585, 87.1350]
 const ZOOM = 14
+const MOBILE_LAYOUT = '(max-width: 768px), (max-width: 1024px) and (max-height: 500px)'
 
 function privacyClass(p) {
   if (p === 'тихий') return 'badge-privacy-quiet'
@@ -39,7 +40,8 @@ function FlyTo({ center, zoom }) {
 
 export default function App() {
   const [tab, setTab] = useState('catalog')
-  const [sidebarHidden, setSidebarHidden] = useState(false)
+  const [sidebarHidden, setSidebarHidden] = useState(() => window.matchMedia(MOBILE_LAYOUT).matches)
+  const sidebarDrag = useRef(null)
   const [catalogMode, setCatalogMode] = useState('objects')
   const [items, setItems] = useState([])
   const [myItems, setMyItems] = useState([])
@@ -128,6 +130,7 @@ export default function App() {
       setSelected(item)
       if (item.lat && item.lng) setFlyTarget([item.lat, item.lng])
       setTab('catalog')
+      if (window.matchMedia(MOBILE_LAYOUT).matches) setSidebarHidden(false)
     } catch (e) { console.error(e) }
   }
 
@@ -242,6 +245,59 @@ export default function App() {
   const onRoutePoint = (pt) => {
     setRoutePoints(prev => [...prev, pt])
     setTab('create')
+  }
+
+  const startSidebarDrag = (event) => {
+    if (!event.isPrimary || event.button !== 0 || !window.matchMedia(MOBILE_LAYOUT).matches) return
+    const handle = event.currentTarget
+    handle.setPointerCapture(event.pointerId)
+    sidebarDrag.current = {
+      pointerId: event.pointerId,
+      y: event.clientY,
+      height: sidebarHidden ? 0 : handle.previousElementSibling.offsetHeight,
+      moved: false,
+    }
+  }
+
+  const resizeSidebar = (event) => {
+    const drag = sidebarDrag.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+    const distance = drag.y - event.clientY
+    if (!drag.moved && Math.abs(distance) < 6) return
+
+    drag.moved = true
+    const viewport = event.currentTarget.parentElement
+    viewport.classList.add('sidebar-dragging')
+    viewport.style.setProperty('--mobile-drag-height', `${(drag.height + distance) / viewport.clientHeight * 100}%`)
+  }
+
+  const finishSidebarDrag = (event) => {
+    const drag = sidebarDrag.current
+    if (!drag || drag.pointerId !== event.pointerId) return
+
+    const viewport = event.currentTarget.parentElement
+    if (event.type === 'pointerup') {
+      if (drag.moved) {
+        const height = drag.height + drag.y - event.clientY
+        const hidden = height < Math.min(72, viewport.clientHeight * 0.2)
+        setSidebarHidden(hidden)
+        if (!hidden) {
+          viewport.style.setProperty('--mobile-sidebar-height', `${height / viewport.clientHeight * 100}%`)
+        }
+      } else if (event.currentTarget.contains(document.elementFromPoint(event.clientX, event.clientY))) {
+        setSidebarHidden(hidden => !hidden)
+      }
+    }
+
+    sidebarDrag.current = null
+    viewport.classList.remove('sidebar-dragging')
+    viewport.style.removeProperty('--mobile-drag-height')
+  }
+
+  const toggleSidebar = (event) => {
+    if (event.detail === 0 || !window.matchMedia(MOBILE_LAYOUT).matches) {
+      setSidebarHidden(hidden => !hidden)
+    }
   }
 
   const visibleItems = items
@@ -628,7 +684,8 @@ export default function App() {
       </div>
 
       <button type="button" className="sidebar-toggle"
-        onClick={() => setSidebarHidden(hidden => !hidden)}
+        onClick={toggleSidebar} onPointerDown={startSidebarDrag} onPointerMove={resizeSidebar}
+        onPointerUp={finishSidebarDrag} onLostPointerCapture={finishSidebarDrag}
         aria-controls="sidebar" aria-expanded={!sidebarHidden}
         aria-label={sidebarHidden ? 'Показать панель управления' : 'Скрыть панель управления'}>
         {sidebarHidden ? '›' : '‹'}
